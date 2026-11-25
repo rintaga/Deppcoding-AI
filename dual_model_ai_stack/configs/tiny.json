@@ -1,0 +1,14 @@
+{
+  "model_name": "tiny-smoke-test",
+  "vocab_size": 512,
+  "hidden_size": 128,
+  "num_layers": 2,
+  "num_heads": 4,
+  "num_kv_heads": 2,
+  "intermediate_size": 384,
+  "context_length": 128,
+  "window_size": 64,
+  "dropout": 0.0,
+  "tie_embeddings": true,
+  "rope_theta": 10000.0
+}

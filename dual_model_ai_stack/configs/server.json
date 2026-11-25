@@ -1,0 +1,16 @@
+{
+  "host": "127.0.0.1",
+  "port": 8000,
+  "workers": 1,
+  "max_queue": 16,
+  "request_timeout_s": 300,
+  "max_loaded_models": 1,
+  "memory_dir": "memory_data",
+  "memory_max_mb": 512,
+  "log_file": "logs/server.log",
+  "models": {
+    "tiny": {"config": "configs/tiny.json", "checkpoint_dir": "checkpoints/tiny"},
+    "1.5b": {"config": "configs/1.5b.json", "checkpoint_dir": "checkpoints/1.5b"},
+    "3b": {"config": "configs/3b.json", "checkpoint_dir": "checkpoints/3b"}
+  }
+}

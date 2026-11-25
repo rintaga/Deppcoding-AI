@@ -1,0 +1,5 @@
+# Inti (training + server). Di Termux/Linux CPU: lihat docs/PANDUAN.md untuk cara pasang torch.
+torch>=2.4
+numpy>=1.24
+safetensors>=0.4
+huggingface_hub>=0.25

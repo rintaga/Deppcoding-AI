@@ -1,0 +1,39 @@
+name: CI
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install pyflakes
+      - name: Compile semua Python
+        run: python -m compileall -q core agent memory server hf_sync scripts tests train.py
+      - name: Pyflakes (import tak terpakai, nama tak terdefinisi)
+        run: python -m pyflakes .
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "${{ matrix.python }}", cache: pip }
+      - name: Pasang dependensi (torch CPU)
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements-dev.txt
+      - name: Verifikasi jumlah parameter 1.5B / 3B (device meta, tanpa RAM besar)
+        run: python scripts/count_params.py --check
+      - name: Tes otomatis
+        run: python -m pytest -q

@@ -1,0 +1,48 @@
+name: Train smoke (tiny, CPU)
+# Hanya uji teknis model KECIL di runner CPU standar. BUKAN untuk melatih 1.5B/3B:
+# runner standar tidak punya GPU dan tiap job dibatasi waktu/RAM/disk.
+on:
+  workflow_dispatch:
+    inputs:
+      steps:
+        description: "Jumlah step training"
+        default: "30"
+      hf_repo:
+        description: "Opsional: username/repo untuk upload (butuh secret HF_TOKEN)"
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11", cache: pip }
+      - run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements-dev.txt
+      - name: Buat data contoh
+        run: |
+          python - <<'PY'
+          import random, pathlib
+          r = random.Random(0)
+          w = "halo dunia ini tes model bahasa kecil belajar python linux termux".split()
+          pathlib.Path("data").mkdir(exist_ok=True)
+          pathlib.Path("data/train.txt").write_text("\n".join(" ".join(r.choice(w) for _ in range(12)) for _ in range(800)))
+          PY
+      - name: Latih tiny
+        run: python train.py --config configs/tiny.json --data data/train.txt --vocab-size 512 --seq-len 64 --batch-size 4 --steps "${{ inputs.steps }}" --save-dir checkpoints/tiny
+      - name: Upload ke Hugging Face (opsional)
+        if: ${{ inputs.hf_repo != '' }}
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python -m hf_sync.hub upload-model "$(ls -d checkpoints/tiny/step_* | tail -1)" "${{ inputs.hf_repo }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tiny-checkpoint
+          path: checkpoints/tiny
+          retention-days: 3
