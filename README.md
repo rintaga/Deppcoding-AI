@@ -1,79 +1,112 @@
-# Dual Model AI Stack (1.5B + 3B, dari nol)
+Deppcoding AI
 
-Ekosistem kecil dan modular untuk melatih dan menjalankan **dua model bahasa dari inisialisasi acak**:
+Dual-Model AI Architecture for Coding and Linux Terminal Intelligence
 
-| Model | Config | Parameter (diverifikasi) | d_model | Layer | Head / KV | FFN |
-|---|---|---|---|---|---|---|
-| tiny (uji) | `configs/tiny.json` | 459.392 | 128 | 2 | 4 / 2 | 384 |
-| **A ≈ 1.5B** | `configs/1.5b.json` | **1.510.082.560** | 2048 | 32 | 16 / 4 | 5632 |
-| **B ≈ 3B** | `configs/3b.json` | **3.025.318.400** | 2560 | 34 | 20 / 4 | 9216 |
+Deppcoding AI is an experimental AI project focused on building a specialized artificial intelligence system for software development, code generation, programming assistance, and Linux terminal operations.
 
-Jumlah parameter dihitung dari model sungguhan (device `meta`) dan dicocokkan dengan rumus analitik:
-`python scripts/count_params.py --check`. Tidak ada bobot pretrained dan tidak ada API AI eksternal.
+The project aims to develop a dual-model architecture in which two specialized AI systems work together to improve coding capabilities and terminal-oriented problem solving.
 
-## Isi proyek
+---
 
-```
-core/        config, model (RMSNorm, RoPE, SwiGLU, GQA, sliding-window, grad checkpointing),
-             tokenizer BPE byte-level, data, training/checkpoint/resume, generate
-memory/      memori eksternal: SQLite (riwayat, dokumen, catatan) + pencarian BM25 + kuota disk
-agent/       agen Linux: workspace terbatas, allowlist perintah, persetujuan pengguna, diagnosis error
-server/      server HTTP (stdlib): antrean, worker, sesi, pilih model 1.5B/3B/tiny, pilih checkpoint
-hf_sync/     upload/download model & dataset ke Hugging Face (token hanya dari env HF_TOKEN)
-scripts/     count_params, prepare_data, generate_text
-tests/       63 tes otomatis
-.github/     CI (lint + tes + cek parameter) dan workflow smoke-train
-.devcontainer/  konfigurasi GitHub Codespaces
-docs/PANDUAN.md  panduan langkah demi langkah (Indonesia, untuk Termux)
-```
+Project Vision
 
-## Mulai cepat (Linux / Codespaces)
+The primary goal is to develop an AI system specifically designed for:
 
-```bash
-pip install -r requirements-dev.txt
-python -m pytest -q
-python scripts/count_params.py --check
-python train.py --config configs/tiny.json --data data/train.txt --vocab-size 512 --steps 50
-```
+- Advanced code generation.
+- Code analysis and understanding.
+- Debugging and error detection.
+- Linux command-line assistance.
+- Shell scripting and automation.
+- Software architecture development.
+- Programming logic and problem solving.
 
-Panduan lengkap untuk HP Android (Termux): **docs/PANDUAN.md**.
+The long-term vision is to build the architecture from scratch, without relying on pretrained model weights or third-party AI APIs.
 
-## Batasan yang harus diketahui (jujur)
+Core Architecture
 
-**Hardware.** Perkiraan memori training (bobot fp32 + gradien + AdamW = 16 byte/param, *belum termasuk aktivasi*):
-1.5B ≈ 22,5 GiB, 3B ≈ 45,1 GiB. Praktisnya 1.5B butuh GPU ≥ 40 GB, 3B butuh GPU ≥ 80 GB (dengan `--grad-checkpoint`).
-Hanya bobot untuk inferensi: 1.5B ≈ 2,8 GiB (bf16), 3B ≈ 5,6 GiB (bf16).
-Skala data: aturan praktis ~20 token per parameter → ~30 miliar token (1.5B) dan ~60 miliar (3B). Dengan asumsi
-6·N·D FLOPs dan GPU A100 ±120 TFLOPs efektif, itu sekitar 26 hari (1.5B) dan 105 hari (3B) pada **satu** GPU
-(angka kasar, tergantung efisiensi). Kode training saat ini **satu GPU saja** (belum DDP/FSDP).
+Deppcoding AI is designed around a dual-model architecture.
 
-**Ponsel / Termux.** Realistisnya hanya model `tiny` untuk belajar dan uji alur. Model >300M parameter tanpa GPU
-CUDA ditolak oleh `train.py` kecuali `--force-large`. Model tiny menghasilkan teks acak-acakan kecuali dilatih dengan data
-sangat banyak; model besar pun tidak otomatis pintar.
+Model 1 — Coding Intelligence
 
-**GitHub Actions / Codespaces.** Runner standar tidak punya GPU dan dibatasi waktu, RAM, dan kuota. Di proyek ini
-Actions hanya untuk lint, tes, dan smoke-train model tiny. Codespaces dipakai untuk development dan tes CPU.
-Kuota gratis berubah-ubah: cek halaman billing akun GitHub Anda.
+Designed to specialize in:
 
-**Konteks & memori.** Konteks aktif model terbatas (`context_length`, 2048 pada config besar). Memori eksternal
-menyimpan lebih banyak dan mengambil potongan relevan ke prompt; ia tumbuh sampai batas kuota disk (`memory_max_mb`),
-bukan tak terbatas. Jumlah token juga terbatas oleh vocab (32.768 pada config besar).
+- Code generation.
+- Programming logic.
+- Code analysis.
+- Debugging.
+- Software development.
+- Multi-language programming support.
 
-**Atensi.** `window_size > 0` memakai sliding-window per blok (biaya ~O(T·2W), diverifikasi sama dengan implementasi
-naif lewat tes). `window_size = 0` = atensi kausal penuh. Config 1.5B/3B memakai window 1024 dari context 2048.
+Model 2 — Terminal Intelligence
 
-**Inferensi.** Generate belum memakai KV-cache (tiap token menghitung ulang konteks), jadi lambat untuk model besar.
+Designed to specialize in:
 
-**Agen.** Allowlist + workspace terbatas + persetujuan pengguna adalah *guardrail*, bukan sandbox keamanan penuh.
-Kode Python yang disetujui tetap berjalan dengan hak akses Anda. Untuk kode tak tepercaya, gunakan container/Codespaces.
-Agen bisa dipakai manual lewat perintah `/`; loop otomatis oleh model baru berguna setelah model Anda terlatih baik.
+- Linux command-line operations.
+- Shell command understanding.
+- Bash scripting.
+- System administration assistance.
+- Terminal workflow automation.
+- Command execution planning.
 
-**Tokenizer.** BPE murni Python: nyaman untuk puluhan MB. Untuk korpus besar, latih tokenizer pada sampel
-(`--tokenizer-sample-mb`); proses tokenisasi data besar akan lama.
+Dual-Model Collaboration
 
-## Status pengujian (apa yang benar-benar dijalankan)
+The two models are intended to collaborate by sharing relevant context and coordinating tasks.
 
-Dijalankan di Linux x86 CPU (Python 3.12, PyTorch 2.15): 63 tes lulus; training tiny, resume, generate,
-server HTTP (curl) dan REPL agen dijalankan nyata; forward 1.5B dan 3B diuji pada device `meta`.
-**Belum diuji:** Android/Termux, GPU/CUDA, training 1.5B/3B sungguhan, eksekusi workflow di GitHub,
-Codespaces, dan upload/download Hugging Face sungguhan (tes memakai API palsu). Workflow YAML hanya divalidasi sintaksnya.
+The objective is to combine programming intelligence with terminal intelligence into one integrated development system.
+
+Development Philosophy
+
+The project follows these principles:
+
+- From-scratch model development.
+- No pretrained model weights.
+- No third-party AI inference APIs.
+- Specialized coding and terminal capabilities.
+- Modular architecture.
+- Open-source development.
+- Continuous experimentation and optimization.
+
+These are project goals, not claims that every capability has already been implemented.
+
+Project Status
+
+Current Stage: Experimental Development
+
+The architecture and its components are under development. Features will be introduced progressively as the project evolves.
+
+Roadmap
+
+- [ ] Core architecture development.
+- [ ] Dual-model system implementation.
+- [ ] Tokenizer development.
+- [ ] Dataset preparation.
+- [ ] Training pipeline.
+- [ ] Coding intelligence development.
+- [ ] Terminal intelligence development.
+- [ ] Model collaboration system.
+- [ ] Inference engine.
+- [ ] Linux terminal integration.
+- [ ] Performance optimization.
+- [ ] Initial public release.
+
+Platform
+
+The project is being developed with an emphasis on Linux-based development environments.
+
+Android users may also experiment with the development workflow through Termux, subject to dependency and hardware limitations.
+
+Open Source License
+
+This project is distributed under the BSD 3-Clause License.
+
+See the "LICENSE" (LICENSE) file for details.
+
+Repository
+
+GitHub: https://github.com/rintaga/Deppcoding-AI
+
+---
+
+Deppcoding AI — Building AI from the Ground Up.
+
+Designed for code. Built for the terminal.
